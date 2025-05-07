@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Forgot Password</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 350px;
+    }
+    input, button {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.75rem 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    .msg {
+      text-align: center;
+      margin-top: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔐 Forgot Password?</h2>
+    <input type="email" id="email" placeholder="Enter your email" />
+    <button id="resetBtn">Send Reset Link</button>
+    <div id="message" class="msg"></div>
+  </div>
+
+  <script type="module">
+    import emailjs from 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/+esm';
+
+    emailjs.init('emjx5OyLdsr8msGLO'); // ✅ Your EmailJS public key
+
+    document.getElementById('resetBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim();
+      const msg = document.getElementById('message');
+      msg.innerText = '';
+
+      try {
+        const res = await fetch('/api/request-reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to create reset link');
+
+        // Send the email with EmailJS
+        await emailjs.send('service_9hpykxl', 'template_5upbh1c', {
+          to_email: email,
+          reset_link: data.resetLink
+        });
+
+        msg.innerText = '✅ Reset link sent! Check your email.';
+        msg.style.color = 'green';
+
+      } catch (err) {
+        console.error('❌ Email error:', err);
+        msg.innerText = '❌ Something went wrong.';
+        msg.style.color = 'red';
+      }
+    });
+  </script>
+</body>
+</html>

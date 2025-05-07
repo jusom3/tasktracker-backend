@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Cache-Control" content="no-store" />
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskTracker - Member</title>
+  <script src="https://unpkg.com/vue@3"></script>
+  <style>
+    body { font-family: 'Poppins', 'Arial', sans-serif; background: #f0f2f5; padding: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #fff; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .header h1 { margin: 0; color: #3498db; }
+    .header-buttons { display: flex; gap: 10px; }
+    button { padding: 8px 14px; font-size: 14px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
+    #logout-btn { background: #e74c3c; color: white; }
+    #switch-btn { background: #2ecc71; color: white; }
+
+    .task-card {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 20px;
+      margin-bottom: 25px;
+      transition: transform 0.3s, box-shadow 0.3s;
+      position: relative;
+    }
+    .task-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .task-status-badge {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: white;
+    }
+    .approved .task-status-badge { background-color: #28a745; }
+    .pending .task-status-badge { background-color: #f39c12; }
+    .denied .task-status-badge { background-color: #e74c3c; }
+
+    .task-title {
+      font-size: 22px;
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: 12px;
+    }
+    .priority-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background-color: #3498db;
+      color: white;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .priority-badge.low { background-color: #3498db; }
+    .priority-badge.medium { background-color: #f39c12; }
+    .priority-badge.high { background-color: #e74c3c; }
+    .divider { border-top: 1px solid #e0e0e0; margin: 15px 0; }
+    .info-line {
+      margin: 8px 0;
+      font-size: 15px;
+      color: #333;
+    }
+    .upload-btn {
+      background-color: #3498db;
+      color: white;
+      font-weight: bold;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      margin-top: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .upload-btn:hover { background-color: #2980b9; }
+    .approved-message {
+      margin-top: 12px;
+      color: #28a745;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .submission-link { margin-top: 15px; font-size: 15px; }
+    .submission-link a { color: #3498db; font-weight: bold; text-decoration: none; }
+    .submission-link a:hover { text-decoration: underline; }
+    .feedback-section {
+      background: #eef9f3;
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 10px;
+    }
+    .feedback-section strong { color: #2c3e50; }
+    .feedback-section p { margin-top: 6px; margin-bottom: 0; color: #2c3e50; }
+    .hidden-box {
+      background: #f8f9fa;
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 18px;
+      font-style: italic;
+      color: #888;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <h1>TaskTracker</h1>
+    <span id="welcome-text" style="font-weight: bold; color: #555; font-size: 14px;"></span>
+  </div>
+  <div class="header-buttons">
+    <button id="logout-btn" onclick="logout()">Logout</button>
+    <button id="switch-btn" onclick="switchRole()">Switch to Leader</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <h2>Your Assigned Tasks</h2>
+
+  <div v-for="task in tasks" :key="task._id" :class="['task-card', task.status || 'pending']">
+
+    <!-- Status Badge -->
+    <div class="task-status-badge">
+      {{ task.status ? task.status.toUpperCase() : 'PENDING' }}
+    </div>
+
+    <!-- Task Title and Priority -->
+    <div class="task-title">
+      {{ task.title }}
+      <span :class="['priority-badge', task.priority.toLowerCase()]">{{ task.priority }}</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Info Lines with Icons -->
+    <div class="info-line">📂 <strong>Category:</strong> {{ task.category || 'N/A' }}</div>
+    <div class="info-line">👤 <strong>Assigned To:</strong> {{ task.assignedTo || 'Unassigned' }}</div>
+    <div class="info-line">📅 <strong>Deadline:</strong> {{ task.deadline ? new Date(task.deadline).toLocaleDateString() : 'No deadline' }}</div>
+    <div class="info-line">🛡️ <strong>Status:</strong> {{ task.status ? task.status.charAt(0).toUpperCase() + task.status.slice(1) : 'Pending' }}</div>
+
+    <div class="divider"></div>
+
+    <!-- Upload/Submission/Feedback Section -->
+    <div v-if="task.assignedTo && task.assignedTo.toLowerCase() === userEmail.toLowerCase()">
+
+      <div v-if="task.status !== 'approved'" class="upload-section">
+        <form @submit.prevent="uploadFile(task._id)">
+          <input type="file" @change="handleFileUpload($event)" accept=".pdf,.doc,.docx,.jpg,.png" required />
+          <button type="submit" class="upload-btn">Upload Submission</button>
+        </form>
+      </div>
+
+      <div v-else class="approved-message">
+        Task Approved - No further uploads needed ✅
+      </div>
+
+      <div v-if="task.submittedFile" class="submission-link">
+        📎 <a :href="task.submittedFile" target="_blank">View Your Submission</a>
+      </div>
+
+      <div v-if="task.leaderComment" class="feedback-section">
+        <strong>Leader Feedback:</strong>
+        <p>{{ task.leaderComment }}</p>
+      </div>
+
+    </div>
+
+    <div v-else class="hidden-box">
+      <div v-if="task.submittedFile">
+        📄 Submission exists (only visible to assigned member or leader 🚫)
+      </div>
+      <div v-else>
+        No submission yet — not assigned to you 🚫
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Scripts -->
+<script>
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('email');
+
+    // More secure: replace history so user cannot go back
+    window.location.replace('/index.html');
+  }
+
+
+function switchRole() {
+  logout();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
+  if (!token || !role) {
+    logout();
+    return;
+  }
+  const welcomeText = document.getElementById('welcome-text');
+  if (!welcomeText) return;
+  if (role === 'member') {
+    welcomeText.innerText = 'Welcome, Member';
+  } else {
+    logout();
+  }
+});
+
+const { createApp } = Vue;
+createApp({
+  data() {
+    return {
+      tasks: [],
+      selectedFile: null,
+      userEmail: localStorage.getItem('email') || "",
+    };
+  },
+  methods: {
+    async fetchTasks() {
+      try {
+        const res = await fetch('/api/tasks', {
+          headers: { Authorization: "Bearer " + localStorage.getItem("token") }
+        });
+        if (!res.ok) throw new Error('Failed to fetch tasks');
+        this.tasks = await res.json();
+      } catch (error) {
+        console.error(error);
+        alert('Error fetching tasks');
+      }
+    },
+    handleFileUpload(event) {
+      const file = event.target.files[0];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        alert('File size exceeds 5MB limit');
+        event.target.value = '';
+        return;
+      }
+      this.selectedFile = file;
+    },
+    async uploadFile(taskId) {
+      if (!this.selectedFile) {
+        alert('No file selected');
+        return;
+      }
+      const formData = new FormData();
+      formData.append('file', this.selectedFile);
+      try {
+        const res = await fetch(`/api/tasks/upload/${taskId}`, {
+          method: 'POST',
+          headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+          body: formData
+        });
+        if (!res.ok) throw new Error('Failed to upload file');
+        alert('✅ File uploaded successfully!');
+        this.selectedFile = null;
+        this.fetchTasks();
+      } catch (error) {
+        console.error(error);
+        alert('Error uploading file');
+      }
+    }
+  },
+    mounted() {
+        fetch('/api/tasks')
+          .then(res => res.json())
+          .then(data => {
+            this.tasks = data;
+
+            // ✅ Debug logs to help trace task visibility issues
+            console.log("📦 Loaded tasks:", this.tasks);
+            console.log("🙋‍♂️ Logged in userEmail:", this.userEmail);
+          });
+      }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
+

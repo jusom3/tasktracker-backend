@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TaskTracker Login</title>
+  <script src="https://unpkg.com/vue@3"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      width: 350px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    .toggle {
+      text-align: center;
+      margin-top: 1rem;
+      cursor: pointer;
+      color: #3498db;
+    }
+    .forgot {
+      text-align: right;
+      margin-top: 0.5rem;
+    }
+    .forgot a {
+      font-size: 0.85rem;
+      color: #3498db;
+      text-decoration: none;
+    }
+    .forgot a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="container">
+      <h2>{{ isLogin ? 'Login' : 'Register' }}</h2>
+
+      <input v-if="!isLogin" v-model="name" placeholder="Full Name" />
+      <input v-model="email" placeholder="Email" type="email" />
+      <input v-model="password" placeholder="Password" type="password" />
+
+      <!-- ✅ Only show forgot password when logging in -->
+      <div class="forgot" v-if="isLogin">
+        <a href="request-reset.html">Forgot Password?</a>
+ </div>
+
+      <select v-if="!isLogin" v-model="role">
+        <option disabled value="">Select Role</option>
+        <option value="team_leader">Team Leader</option>
+        <option value="member">Team Member</option>
+      </select>
+
+      <button @click="submit">{{ isLogin ? 'Login' : 'Register' }}</button>
+
+      <div class="toggle" @click="isLogin = !isLogin">
+        {{ isLogin ? 'Don\'t have an account? Register' : 'Already registered? Login' }}
+      </div>
+
+      <div v-if="message" style="margin-top: 1rem; color: red;">{{ message }}</div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          isLogin: true,
+          name: '',
+          email: '',
+          password: '',
+          role: '',
+          message: ''
+        };
+      },
+      methods: {
+        async submit() {
+          const endpoint = this.isLogin ? '/api/auth/login' : '/api/auth/register';
+          const body = this.isLogin
+            ? {
+              email: this.email.trim(),
+              password: this.password.trim()
+            }
+            : { name: this.name, email: this.email, password: this.password, role: this.role };
+
+          try {
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Unknown error');
+
+            if (this.isLogin) {
+              localStorage.setItem('token', data.token);
+              localStorage.setItem('role', data.role);
+              localStorage.setItem('email', this.email);
+              window.location.href = data.role === 'team_leader' ? '/leader.html' : '/member.html';
+            } else {
+              this.message = 'Registration successful. Please login.';
+              this.isLogin = true;
+            }
+          } catch (err) {
+            this.message = err.message;
+          }
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
