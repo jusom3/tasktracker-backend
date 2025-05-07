@@ -15,7 +15,8 @@ router.post('/', async (req, res) => {
     user.resetTokenExpiry = Date.now() + 1000 * 60 * 2; // ✅ 2 minutes
     await user.save();
 
-    const resetLink = `https://task-tracker-backend-isaacjusom.replit.app/reset-password.html?token=${token}`;
+    const resetLink = `https://tasktracker-backendnpm-install.onrender.com/reset-password.html?token=${token}`;
+
     res.json({ message: 'Reset link generated', resetLink });
 
   } catch (err) {
